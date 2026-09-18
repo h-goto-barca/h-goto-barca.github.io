@@ -455,7 +455,7 @@
                     transfersByRecipient[to].push({ frm, amt });
                 }
             }
-            
+
             let transferHtml = '';
             for (let to in transfersByRecipient) {
                 transferHtml += `<div class="transfer-group"><b style="color: #166534; font-size: 0.9rem;">➡️ ${to} へ支払う人</b>`;
@@ -465,7 +465,7 @@
                 transferHtml += `</div>`;
             }
             document.getElementById('travelTransfers').innerHTML = transferHtml || "<div class='empty-text'>精算する金額はありません</div>";
-            
+
             let individualHtml = '';
             travelMembers.forEach(m => {
                 let p = stats[m].paid;
@@ -712,7 +712,7 @@
                 if (!hasTransfers) {
                     htmlContent += `<div>精算する金額はありません。</div>`;
                 }
-            
+
             } else {
                 titleEl.textContent = '【 家計簿・収支 レシート 】';
                 let totalIncome = hhExpenses.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0);
@@ -749,5 +749,5 @@
             document.getElementById('printReceiptModal').style.display = 'none';
         }
     </script>
-</body>x
+</body>
 </html>
