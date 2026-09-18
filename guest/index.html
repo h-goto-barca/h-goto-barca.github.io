@@ -99,8 +99,39 @@
         ul { padding-left: 0; list-style: none; margin: 8px 0; max-height: 150px; overflow-y: auto; }
         li { margin-bottom: 6px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; gap: 8px; }
         .empty-text { color: #64748b; font-style: italic; text-align: center; margin: 10px 0; }
-        .transfer-group { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px; border-radius: 8px; margin-bottom: 8px; }
-        .transfer-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; margin-top: 4px; padding-top: 4px; border-top: 1px dashed #dcfce7; }
+        
+        /* 送り主ごとの独立したテーブル（表）スタイル */
+        .sender-section {
+            background: #ffffff;
+            border: 2px solid #cbd5e1;
+            border-radius: 10px;
+            margin-bottom: 14px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+        }
+        .sender-section:last-child {
+            margin-bottom: 0;
+        }
+        .sender-header {
+            background: #e2e8f0;
+            padding: 8px 12px;
+            font-weight: bold;
+            font-size: 0.95krem;
+            color: #334155;
+            border-bottom: 1px solid #cbd5e1;
+        }
+        .sender-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .sender-row:last-child {
+            border-bottom: none;
+        }
+        .sender-row-left { font-size: 0.9rem; color: #1e293b; }
+        .sender-row-right { font-weight: bold; color: #16a34a; font-size: 1rem; }
 
         #printReceiptModal {
             display: none;
@@ -197,12 +228,12 @@
             </div>
             <div class="result-box">
                 <p>総支出: <span id="travelTotal" style="font-weight: bold; color: #4f46e5;">0 円</span></p>
-                <div style="margin-top: 10px; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
-                    <b style="font-size: 0.9rem; color: #334155;">💡 精算リスト（誰から誰へ）</b>
-                    <div id="travelTransfers" style="margin-top: 6px;"></div>
+                <div style="margin-top: 12px; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
+                    <b style="font-size: 0.9rem; color: #334155; display: block; margin-bottom: 8px;">💡 誰から誰へいくら払うか </b>
+                    <div id="travelTransfers"></div>
                 </div>
-                <div style="margin-top: 12px; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
-                    <b style="font-size: 0.9rem; color: #334155;">👤 収支内訳</b>
+                <div style="margin-top: 14px; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
+                    <b style="font-size: 0.9rem; color: #334155; display: block; margin-bottom: 6px;">👤 収支内訳</b>
                     <div id="travelIndividual"></div>
                 </div>
             </div>
@@ -273,12 +304,12 @@
                 <p>総収入: <span id="hhTotalIncome" style="font-weight: bold; color: #22c55e;">0 円</span></p>
                 <p>総支出: <span id="hhTotalExpense" style="font-weight: bold; color: #ef4444;">0 円</span></p>
                 <p>差し引き収支: <span id="hhBalanceTotal" style="font-weight: bold; color: #f97316;">0 円</span></p>
-                <div style="margin-top: 10px; border-top: 1px dashed #fed7aa; padding-top: 8px;">
-                    <b style="font-size: 0.9rem; color: #9a3412;">💡 精算リスト（誰から誰へ）</b>
-                    <div id="hhTransfers" style="margin-top: 6px;"></div>
+                <div style="margin-top: 12px; border-top: 1px dashed #fed7aa; padding-top: 10px;">
+                    <b style="font-size: 0.9rem; color: #9a3412; display: block; margin-bottom: 8px;">💡 誰から誰へいくら払うか</b>
+                    <div id="hhTransfers"></div>
                 </div>
-                <div style="margin-top: 12px; border-top: 1px dashed #fed7aa; padding-top: 8px;">
-                    <b style="font-size: 0.9rem; color: #9a3412;">👤 一人ひとりの収支内訳</b>
+                <div style="margin-top: 14px; border-top: 1px dashed #fed7aa; padding-top: 10px;">
+                    <b style="font-size: 0.9rem; color: #9a3412; display: block; margin-bottom: 6px;">👤 一人ひとりの収支内訳</b>
                     <div id="hhIndividual"></div>
                 </div>
             </div>
@@ -339,6 +370,85 @@
             loadHhData();
         });
 
+        // --- 送り主ごとのテーブル形式に組み立てるHTML生成関数 ---
+        function renderGroupedTransfers(expenses, members) {
+            let netMap = {};
+            members.forEach(m1 => {
+                netMap[m1] = {};
+                members.forEach(m2 => { netMap[m1][m2] = 0; });
+            });
+
+            expenses.forEach(e => {
+                if (e.targets && e.targets.length > 0) {
+                    let per = e.amount / e.targets.length;
+                    e.targets.forEach(t => {
+                        if (t !== e.payer) {
+                            netMap[t][e.payer] += per;
+                        }
+                    });
+                }
+            });
+
+            let finalTransfers = [];
+            let processed = new Set();
+
+            members.forEach(m1 => {
+                members.forEach(m2 => {
+                    if (m1 !== m2) {
+                        let pairKey = [m1, m2].sort().join('-');
+                        if (!processed.has(pairKey)) {
+                            processed.add(pairKey);
+                            let amt1to2 = netMap[m1][m2] || 0;
+                            let amt2to1 = netMap[m2][m1] || 0;
+
+                            let diff = amt1to2 - amt2to1;
+                            let roundedDiff = Math.round(Math.abs(diff));
+                            if (roundedDiff > 0) {
+                                if (diff > 0) {
+                                    finalTransfers.push({ from: m1, to: m2, amount: roundedDiff });
+                                } else {
+                                    finalTransfers.push({ from: m2, to: m1, amount: roundedDiff });
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+
+            if (finalTransfers.length === 0) {
+                return "<div class='empty-text'>精算する金額はありません</div>";
+            }
+
+            // 「誰が払うか（from）」ごとにグループ化する
+            let groupedBySender = {};
+            finalTransfers.forEach(tr => {
+                if (!groupedBySender[tr.from]) {
+                    groupedBySender[tr.from] = [];
+                }
+                groupedBySender[tr.from].push(tr);
+            });
+
+            let html = '';
+            for (let sender in groupedBySender) {
+                html += `
+                    <div class="sender-section">
+                        <div class="sender-header">💸 <b>${sender}</b> さんが払う相手</div>
+                `;
+                groupedBySender[sender].forEach(tr => {
+                    html += `
+                        <div class="sender-row">
+                            <div class="sender-row-left">→ <b>${tr.to}</b> さんへ</div>
+                            <div class="sender-row-right">${tr.amount.toLocaleString()} 円</div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+
+            return html;
+        }
+
+
         // --- 旅費アプリロジック ---
         let travelMembers = JSON.parse(localStorage.getItem('travel_members') || '[]');
         let travelExpenses = JSON.parse(localStorage.getItem('travel_expenses') || '[]');
@@ -360,7 +470,7 @@
             }
         }
 
-        function deleteTravelMember(name) {
+        fnDeleteTravelMember = function(name) {
             travelMembers = travelMembers.filter(m => m !== name);
             saveTravelData();
         }
@@ -400,11 +510,10 @@
 
         function renderTravel() {
             document.getElementById('travelMemberList').innerHTML = travelMembers.length ? travelMembers.map(m => `
-                <li><span><b>${m}</b></span><button type="button" class="btn-sm-danger" onclick="deleteTravelMember('${m}')">削除</button></li>
+                <li><span><b>${m}</b></span><button type="button" class="btn-sm-danger" onclick="fnDeleteTravelMember('${m}')">削除</button></li>
             `).join('') : "<div class='empty-text'>まだメンバーがいません</div>";
 
             document.getElementById('travelPayer').innerHTML = travelMembers.length ? travelMembers.map(m => `<option value="${m}">${m}</option>`).join('') : '<option value="">メンバーを追加してください</option>';
-            // 💡 ここで checked を付与して最初から全選択状態にしています
             document.getElementById('travelTargetsGrid').innerHTML = travelMembers.length ? travelMembers.map(m => `
                 <label><input type="checkbox" value="${m}" checked> ${m}</label>
             `).join('') : "<div class='empty-text' style='grid-column: span 2;'>メンバーがいません</div>";
@@ -422,49 +531,8 @@
                 }
             });
 
-            let directTransfers = {};
-            travelExpenses.forEach(e => {
-                if (!e.targets || !e.targets.length) return;
-                let per = e.amount / e.targets.length;
-                e.targets.forEach(t => {
-                    if (t !== e.payer) {
-                        let key = t + '___' + e.payer;
-                        directTransfers[key] = (directTransfers[key] || 0) + per;
-                    }
-                });
-            });
-
-            let pairs = Object.keys(directTransfers);
-            pairs.forEach(p1 => {
-                let [t1, t2] = p1.split('___');
-                let p2 = t2 + '___' + t1;
-                if (directTransfers[p2]) {
-                    let diff = directTransfers[p1] - directTransfers[p2];
-                    if (diff > 0) { directTransfers[p1] = diff; delete directTransfers[p2]; }
-                    else if (diff < 0) { directTransfers[p2] = -diff; delete directTransfers[p1]; }
-                    else { delete directTransfers[p1]; delete directTransfers[p2]; }
-                }
-            });
-
-            let transfersByRecipient = {};
-            for (let key in directTransfers) {
-                let [frm, to] = key.split('___');
-                let amt = Math.round(directTransfers[key]);
-                if (amt > 0) {
-                    if (!transfersByRecipient[to]) transfersByRecipient[to] = [];
-                    transfersByRecipient[to].push({ frm, amt });
-                }
-            }
-
-            let transferHtml = '';
-            for (let to in transfersByRecipient) {
-                transferHtml += `<div class="transfer-group"><b style="color: #166534; font-size: 0.9rem;">➡️ ${to} へ支払う人</b>`;
-                transfersByRecipient[to].forEach(item => {
-                    transferHtml += `<div class="transfer-item"><span><b>${item.frm}</b> さん</span><span style="font-weight: bold; color: #15803d;">${item.amt.toLocaleString()} 円</span></div>`;
-                });
-                transferHtml += `</div>`;
-            }
-            document.getElementById('travelTransfers').innerHTML = transferHtml || "<div class='empty-text'>精算する金額はありません</div>";
+            // 送り主ごとの表を描画
+            document.getElementById('travelTransfers').innerHTML = renderGroupedTransfers(travelExpenses, travelMembers);
 
             let individualHtml = '';
             travelMembers.forEach(m => {
@@ -506,7 +574,7 @@
             }
         }
 
-        function deleteHhMember(name) {
+        fnDeleteHhMember = function(name) {
             hhMembers = hhMembers.filter(m => m !== name);
             saveHhData();
         }
@@ -549,11 +617,10 @@
 
         function renderHh() {
             document.getElementById('hhMemberList').innerHTML = hhMembers.length ? hhMembers.map(m => `
-                <li><span><b>${m}</b></span><button type="button" class="btn-sm-danger" onclick="deleteHhMember('${m}')">削除</button></li>
+                <li><span><b>${m}</b></span><button type="button" class="btn-sm-danger" onclick="fnDeleteHhMember('${m}')">削除</button></li>
             `).join('') : "<div class='empty-text'>まだメンバーがいません</div>";
 
             document.getElementById('hhPayer').innerHTML = hhMembers.length ? hhMembers.map(m => `<option value="${m}">${m}</option>`).join('') : '<option value="">メンバーを追加してください</option>';
-            // 💡 ここでも checked を付与して最初から全選択状態にしています
             document.getElementById('hhTargetsGrid').innerHTML = hhMembers.length ? hhMembers.map(m => `
                 <label><input type="checkbox" value="${m}" checked> ${m}</label>
             `).join('') : "<div class='empty-text' style='grid-column: span 2;'>メンバーがいません</div>";
@@ -580,50 +647,8 @@
                 }
             });
 
-            let directTransfers = {};
-            hhExpenses.forEach(e => {
-                if (e.type === 'expense' && e.targets && e.targets.length) {
-                    let per = e.amount / e.targets.length;
-                    e.targets.forEach(t => {
-                        if (t !== e.payer) {
-                            let key = t + '___' + e.payer;
-                            directTransfers[key] = (directTransfers[key] || 0) + per;
-                        }
-                    });
-                }
-            });
-
-            let pairs = Object.keys(directTransfers);
-            pairs.forEach(p1 => {
-                let [t1, t2] = p1.split('___');
-                let p2 = t2 + '___' + t1;
-                if (directTransfers[p2]) {
-                    let diff = directTransfers[p1] - directTransfers[p2];
-                    if (diff > 0) { directTransfers[p1] = diff; delete directTransfers[p2]; }
-                    else if (diff < 0) { directTransfers[p2] = -diff; delete directTransfers[p1]; }
-                    else { delete directTransfers[p1]; delete directTransfers[p2]; }
-                }
-            });
-
-            let transfersByRecipient = {};
-            for (let key in directTransfers) {
-                let [frm, to] = key.split('___');
-                let amt = Math.round(directTransfers[key]);
-                if (amt > 0) {
-                    if (!transfersByRecipient[to]) transfersByRecipient[to] = [];
-                    transfersByRecipient[to].push({ frm, amt });
-                }
-            }
-
-            let transferHtml = '';
-            for (let to in transfersByRecipient) {
-                transferHtml += `<div class="transfer-group"><b style="color: #166534; font-size: 0.9rem;">➡️ ${to} へ渡す人</b>`;
-                transfersByRecipient[to].forEach(item => {
-                    transferHtml += `<div class="transfer-item"><span><b>${item.frm}</b> さん</span><span style="font-weight: bold; color: #15803d;">${item.amt.toLocaleString()} 円</span></div>`;
-                });
-                transferHtml += `</div>`;
-            }
-            document.getElementById('hhTransfers').innerHTML = transferHtml || "<div class='empty-text'>精算する金額はありません</div>";
+            let expenseItems = hhExpenses.filter(e => e.type === 'expense');
+            document.getElementById('hhTransfers').innerHTML = renderGroupedTransfers(expenseItems, hhMembers);
 
             let individualHtml = '';
             hhMembers.forEach(m => {
@@ -676,40 +701,51 @@
                 }
 
                 htmlContent += `<div style="margin:12px 0; border-top:1px dashed #000; padding-top:8px;"><b>総支出合計: ¥${total.toLocaleString()}</b></div>`;
-                htmlContent += `<div style="margin-bottom:8px; border-bottom:1px dashed #000; padding-bottom:8px;"><b>■ 精算結果 (お支払い)</b></div>`;
+                htmlContent += `<div style="margin-bottom:8px; border-bottom:1px dashed #000; padding-bottom:8px;"><b>■ 精算結果</b></div>`;
 
-                let directTransfers = {};
+                let netMap = {};
+                travelMembers.forEach(m1 => {
+                    netMap[m1] = {};
+                    travelMembers.forEach(m2 => { netMap[m1][m2] = 0; });
+                });
                 travelExpenses.forEach(e => {
-                    if (!e.targets || !e.targets.length) return;
-                    let per = e.amount / e.targets.length;
-                    e.targets.forEach(t => {
-                        if (t !== e.payer) {
-                            let key = t + '___' + e.payer;
-                            directTransfers[key] = (directTransfers[key] || 0) + per;
+                    if (e.targets && e.targets.length > 0) {
+                        let per = e.amount / e.targets.length;
+                        e.targets.forEach(t => { if (t !== e.payer) netMap[t][e.payer] += per; });
+                    }
+                });
+                let finalTransfers = [];
+                let processed = new Set();
+                travelMembers.forEach(m1 => {
+                    travelMembers.forEach(m2 => {
+                        if (m1 !== m2) {
+                            let pairKey = [m1, m2].sort().join('-');
+                            if (!processed.has(pairKey)) {
+                                processed.add(pairKey);
+                                let diff = (netMap[m1][m2] || 0) - (netMap[m2][m1] || 0);
+                                let roundedDiff = Math.round(Math.abs(diff));
+                                if (roundedDiff > 0) {
+                                    if (diff > 0) finalTransfers.push({ from: m1, to: m2, amount: roundedDiff });
+                                    else finalTransfers.push({ from: m2, to: m1, amount: roundedDiff });
+                                }
+                            }
                         }
                     });
                 });
-                let pairs = Object.keys(directTransfers);
-                pairs.forEach(p1 => {
-                    let [t1, t2] = p1.split('___');
-                    let p2 = t2 + '___' + t1;
-                    if (directTransfers[p2]) {
-                        let diff = directTransfers[p1] - directTransfers[p2];
-                        if (diff > 0) { directTransfers[p1] = diff; delete directTransfers[p2]; }
-                        else if (diff < 0) { directTransfers[p2] = -diff; delete directTransfers[p1]; }
-                        else { delete directTransfers[p1]; delete directTransfers[p2]; }
+
+                if (finalTransfers.length > 0) {
+                    let grouped = {};
+                    finalTransfers.forEach(tr => {
+                        if (!grouped[tr.from]) grouped[tr.from] = [];
+                        grouped[tr.from].push(tr);
+                    });
+                    for (let s in grouped) {
+                        htmlContent += `<div style="margin-top:6px;"><b>[ ${s} さんが払う相手 ]</b></div>`;
+                        grouped[s].forEach(tr => {
+                            htmlContent += `<div>・→ ${tr.to} : ¥${tr.amount.toLocaleString()}</div>`;
+                        });
                     }
-                });
-                let hasTransfers = false;
-                for (let key in directTransfers) {
-                    let [frm, to] = key.split('___');
-                    let amt = Math.round(directTransfers[key]);
-                    if (amt > 0) {
-                        hasTransfers = true;
-                        htmlContent += `<div>▶ ${frm} → ${to} : ¥${amt.toLocaleString()}</div>`;
-                    }
-                }
-                if (!hasTransfers) {
+                } else {
                     htmlContent += `<div>精算する金額はありません。</div>`;
                 }
 
@@ -740,7 +776,7 @@
                 htmlContent += `<div><b>差し引き収支: ¥${balanceTotal.toLocaleString()}</b></div>`;
                 htmlContent += `</div>`;
             }
-
+            
             bodyEl.innerHTML = htmlContent;
             modal.style.display = 'flex';
         }
