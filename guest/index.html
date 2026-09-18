@@ -3,661 +3,751 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>旅費・家計簿 総合アプリ</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Alpine.js CDN -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <!-- html2pdf.js CDN (確実にPDF出力するため) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-</head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex justify-center p-4" x-data="appData()">
-
-    <div class="w-full max-w-md">
+    <title>アプリ選択</title>
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+        } 
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        h1 {
+            color: var(--primary-color);
+            font-size: 1.6rem;
+            margin-bottom: 8px;
+        }
+        p {
+            color: #64748b;
+            font-size: 0.95rem;
+            margin-bottom: 24px;
+        }
+        .menu-card {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            margin-bottom: 16px;
+            text-decoration: none;
+            display: block;
+            color: inherit;
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+        .menu-card:active {
+            transform: scale(0.98);
+        }
+        .menu-card.travel { border-color: #c7d2fe; }
+        .menu-card.household { border-color: #fed7aa; }
+        .menu-card h2 { margin: 0 0 8px 0; font-size: 1.2rem; }
+        .menu-card.travel h2 { color: #4f46e5; }
+        .menu-card.household h2 { color: #c2410c; }
+        .menu-card span { font-size: 0.9rem; color: #64748b; }
         
-        <!-- ================= 1. ホーム画面 ================= -->
-        <template x-if="currentView === 'home'">
-            <div class="text-center py-12">
-                <h1 class="text-2xl font-bold text-indigo-600 mb-2">✨ アプリ選択</h1>
-                <p class="text-slate-500 text-sm mb-6">利用したい機能を選んでください</p>
+        .app-view { display: none; width: 100%; max-width: 440px; }
+        .app-view.active { display: block; }
+        
+        .nav-back { display: inline-block; margin-bottom: 12px; color: var(--primary-color); text-decoration: none; font-weight: bold; font-size: 0.9rem; cursor: pointer; }
+        .app-header { text-align: center; margin-bottom: 20px; }
+        .group-photo-container { width: 90px; height: 90px; margin: 0 auto 10px auto; border-radius: 50%; overflow: hidden; border: 3px solid var(--primary-color); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); cursor: pointer; background: #e2e8f0; }
+        .group-photo-container img { width: 100%; height: 100%; object-fit: cover; }
+        .card { background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); margin-bottom: 16px; text-align: left; }
+        .card h3 { margin-top: 0; font-size: 1.1rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; }
+        .card-banner-photo { width: 100%; height: 140px; border-radius: 8px; overflow: hidden; margin-bottom: 12px; cursor: pointer; background: #e2e8f0; }
+        .card-banner-photo img { width: 100%; height: 100%; object-fit: cover; }
+        label { display: block; margin-top: 10px; font-weight: 600; font-size: 0.9rem; }
+        input[type="text"], input[type="number"], input[type="date"], select { width: 100%; padding: 10px 12px; margin-top: 4px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; background: white; outline: none; }
+        .checkbox-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 6px; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .checkbox-grid label { display: flex; align-items: center; font-weight: normal; margin-top: 0; font-size: 0.9rem; cursor: pointer; }
+        .checkbox-grid input { width: 16px; height: 16px; margin-right: 6px; }
+        button { width: 100%; padding: 12px; margin-top: 16px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        .btn-primary { background-color: #4f46e5; color: white; }
+        .btn-success { background-color: #10b981; color: white; text-decoration: none; display: block; text-align: center; padding: 12px; border-radius: 8px; font-weight: bold; margin-top: 8px; box-sizing: border-box; cursor: pointer; }
+        .btn-danger { background-color: #fee2e2; color: #ef4444; margin-top: 8px; }
+        
+        .btn-sm-danger { 
+            background-color: #fee2e2; 
+            color: #ef4444; 
+            border: none; 
+            padding: 6px 12px; 
+            font-size: 0.8rem; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            width: auto !important; 
+            margin-top: 0 !important;
+            flex-shrink: 0;
+        }
 
-                <div @click="currentView = 'travel'; window.scrollTo(0,0);" class="bg-white p-6 rounded-2xl shadow-sm mb-4 border-2 border-indigo-100 hover:border-indigo-400 cursor-pointer text-left transition active:scale-98">
-                    <h2 class="text-lg font-bold text-indigo-600 mb-1">✈️ 旅費・割り勘計算</h2>
-                    <span class="text-xs text-slate-500">旅行のメンバー管理や立て替え・精算の計算をします</span>
+        .result-box { background: #eef2ff; padding: 12px; border-radius: 8px; margin-bottom: 12px; }
+        .result-box p { margin: 6px 0; font-size: 0.95rem; }
+        ul { padding-left: 0; list-style: none; margin: 8px 0; max-height: 150px; overflow-y: auto; }
+        li { margin-bottom: 6px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; gap: 8px; }
+        .empty-text { color: #64748b; font-style: italic; text-align: center; margin: 10px 0; }
+        .transfer-group { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px; border-radius: 8px; margin-bottom: 8px; }
+        .transfer-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; margin-top: 4px; padding-top: 4px; border-top: 1px dashed #dcfce7; }
+
+        #printReceiptModal {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000;
+        }
+        .receipt-card {
+            background: #fff; width: 320px; max-height: 85vh; overflow-y: auto;
+            padding: 24px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            font-family: monospace; color: #000;
+        }
+        .receipt-header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 12px; margin-bottom: 12px; }
+        .receipt-footer { text-align: center; border-top: 2px dashed #000; padding-top: 12px; margin-top: 12px; font-size: 0.85rem; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #printReceiptModal, #printReceiptModal * { visibility: visible; }
+            #printReceiptModal { position: absolute; left: 0; top: 0; width: 100%; background: none; display: flex !important; }
+            .no-print { display: none !important; }
+            .receipt-card { box-shadow: none; width: 100%; max-height: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. ホーム画面 -->
+    <div id="view-home" class="container app-view active">
+        <h1>✨ アプリ選択</h1>
+        <p>利用したい機能を選んでください</p>
+
+        <div class="menu-card travel" onclick="switchView('travel')">
+            <h2>✈️ 旅費・割り勘計算</h2>
+            <span>旅行のメンバー管理や立て替え・精算の計算をします</span>
+        </div>
+
+        <div class="menu-card household" onclick="switchView('household')">
+            <h2>🏠 家計簿（収入・割り勘対応）</h2>
+            <span>メンバー登録して、共通の支出や収入、割り勘を管理します</span>
+        </div>
+    </div>
+
+
+    <!-- 2. 旅費・割り勘アプリ画面 -->
+    <div id="view-travel" class="app-view">
+        <a class="nav-back" onclick="switchView('home')">← メニューに戻る</a>
+        <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="handlePhotoChange(event)">
+
+        <div class="app-header">
+            <div class="group-photo-container" onclick="triggerPhotoSelect('headerPhoto')">
+                <img id="headerPhoto" src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=300" alt="ヘッダー写真">
+            </div>
+            <h2 style="color: #4f46e5; margin: 0;">✈️ 旅費・割り勘計算</h2>
+        </div>
+
+        <div class="card">
+            <h3>👥 メンバー管理</h3>
+            <div class="card-banner-photo" onclick="triggerPhotoSelect('bannerPhoto1')">
+                <img id="bannerPhoto1" src="https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=500" alt="メンバー写真">
+            </div>
+            <form onsubmit="addTravelMember(event)">
+                <label>メンバーの名前を追加</label>
+                <div style="display: flex; gap: 8px; margin-top: 4px;">
+                    <input type="text" id="travelMemberName" placeholder="例: 田中" required style="margin-top:0;">
+                    <button type="submit" class="btn-primary" style="margin-top:0; width: 100px;">追加</button>
                 </div>
+            </form>
+            <div style="margin-top: 12px;">
+                <label style="margin-bottom: 4px;">登録中のメンバー</label>
+                <ul id="travelMemberList"></ul>
+            </div>
+        </div>
 
-                <div @click="currentView = 'household'; window.scrollTo(0,0);" class="bg-white p-6 rounded-2xl shadow-sm mb-4 border-2 border-orange-100 hover:border-orange-400 cursor-pointer text-left transition active:scale-98">
-                    <h2 class="text-lg font-bold text-orange-600 mb-1">🏠 家計簿（収入・割り勘対応）</h2>
-                    <span class="text-xs text-slate-500">メンバー登録して、共通の支出や収入、割り勘を管理します</span>
+        <div class="card">
+            <h3>📝 支払いの追加</h3>
+            <form onsubmit="addTravelExpense(event)">
+                <label>日付 (任意)</label>
+                <input type="date" id="travelDate">
+                <label>払った人</label>
+                <select id="travelPayer" required></select>
+                <label>金額 (円)</label>
+                <input type="number" id="travelAmount" required placeholder="例: 6000">
+                <label>内容</label>
+                <input type="text" id="travelMemo" required placeholder="例: 宿代">
+                <label>この支払いを負担する人</label>
+                <div class="checkbox-grid" id="travelTargetsGrid"></div>
+                <button type="submit" class="btn-primary">記録する</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>📊 精算結果</h3>
+            <div class="card-banner-photo" onclick="triggerPhotoSelect('bannerPhoto2')">
+                <img id="bannerPhoto2" src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=500" alt="思い出写真">
+            </div>
+            <div class="result-box">
+                <p>総支出: <span id="travelTotal" style="font-weight: bold; color: #4f46e5;">0 円</span></p>
+                <div style="margin-top: 10px; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
+                    <b style="font-size: 0.9rem; color: #334155;">💡 精算リスト（誰から誰へ）</b>
+                    <div id="travelTransfers" style="margin-top: 6px;"></div>
+                </div>
+                <div style="margin-top: 12px; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
+                    <b style="font-size: 0.9rem; color: #334155;">👤 収支内訳</b>
+                    <div id="travelIndividual"></div>
                 </div>
             </div>
-        </template>
+            <h4 style="margin-bottom: 8px; font-size: 0.95rem;">支払い履歴</h4>
+            <ul id="travelHistoryList"></ul>
+            
+            <button type="button" class="btn-success" onclick="openReceiptModal('travel')">🧾 レシート・PDFを出力</button>
+            <button type="button" class="btn-danger" onclick="resetTravelData()">すべてリセット</button>
+            <a class="nav-back" style="display: block; text-align: center; margin-top: 16px;" onclick="switchView('home')">← メニューに戻る</a>
+        </div>
+    </div>
 
-        <!-- ================= 2. 旅費アプリ画面 ================= -->
-        <template x-if="currentView === 'travel'">
-            <div>
-                <button @click="currentView = 'home'; window.scrollTo(0,0);" class="inline-block mb-3 text-indigo-600 font-bold text-sm hover:underline">← メニューに戻る</button>
-                <input type="file" id="travelPhotoInput" accept="image/*" class="hidden" @change="handlePhotoChange($event, travelActivePhoto)">
 
-                <div class="text-center mb-5">
-                    <div @click="travelTriggerPhoto('headerPhoto')" class="w-24 h-24 mx-auto mb-2 rounded-full overflow-hidden border-3 border-indigo-600 shadow-md cursor-pointer bg-slate-200">
-                        <img :src="travelPhotos.headerPhoto" class="w-full h-full object-cover" alt="ヘッダー写真">
-                    </div>
-                    <h2 class="text-xl font-bold text-indigo-600">✈️ 旅費・割り勘 レシート</h2>
+    <!-- 3. 家計簿アプリ画面 -->
+    <div id="view-household" class="app-view">
+        <a class="nav-back" onclick="switchView('home')">← メニューに戻る</a>
+        
+        <div class="app-header">
+            <h2 style="color: #f97316; margin: 0;">🏠 家計簿（収入・割り勘対応）</h2>
+        </div>
+
+        <div class="card">
+            <h3>👥 メンバー管理</h3>
+            <form onsubmit="addHhMember(event)">
+                <label>メンバーの名前を追加</label>
+                <div style="display: flex; gap: 8px; margin-top: 4px;">
+                    <input type="text" id="hhMemberName" placeholder="例: 家族 / 自分" required style="margin-top:0;">
+                    <button type="submit" class="btn-primary" style="margin-top:0; width: 100px; background-color: #f97316;">追加</button>
                 </div>
+            </form>
+            <div style="margin-top: 12px;">
+                <label style="margin-bottom: 4px;">登録中のメンバー</label>
+                <ul id="hhMemberList"></ul>
+            </div>
+        </div>
 
-                <!-- メンバー管理 -->
-                <div class="bg-white p-5 rounded-xl shadow-sm mb-4">
-                    <h3 class="font-bold text-base border-b pb-2 mb-3">👥 メンバー管理</h3>
-                    <div @click="travelTriggerPhoto('bannerPhoto1')" class="w-full h-32 rounded-lg overflow-hidden mb-3 cursor-pointer bg-slate-200">
-                        <img :src="travelPhotos.bannerPhoto1" class="w-full h-full object-cover" alt="メンバー写真">
-                    </div>
-                    <form @submit.prevent="addTravelMember">
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">メンバーの名前を追加</label>
-                        <div class="flex gap-2">
-                            <input type="text" x-model="newTravelMemberName" placeholder="例: 田中" required class="flex-1 px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500">
-                            <button type="submit" class="bg-indigo-600 text-white font-bold px-4 py-2 rounded-lg text-sm hover:bg-indigo-700">追加</button>
-                        </div>
-                    </form>
-                    <div class="mt-3">
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">登録中のメンバー</label>
-                        <ul class="max-h-36 overflow-y-auto space-y-1">
-                            <template x-for="(m, index) in travelMembers" :key="index">
-                                <li class="flex justify-between items-center text-sm border-b pb-1">
-                                    <span class="font-bold" x-text="m"></span>
-                                    <button @click="deleteTravelMember(index)" class="bg-red-100 text-red-600 text-xs px-2 py-1 rounded hover:bg-red-200">削除</button>
-                                </li>
-                            </template>
-                            <template x-if="travelMembers.length === 0">
-                                <div class="text-slate-400 text-xs italic text-center py-2">まだメンバーがいません</div>
-                            </template>
-                        </ul>
-                    </div>
+        <div class="card">
+            <h3>📝 収支の追加</h3>
+            <form onsubmit="addHhItem(event)">
+                <label>日付 (任意)</label>
+                <input type="date" id="hhDate">
+
+                <label>種類</label>
+                <select id="hhItemType" required>
+                    <option value="expense">🔴 支出（支払い）</option>
+                    <option value="income">🟢 収入（受取・給料など）</option>
+                </select>
+
+                <label>対象者（担当者）</label>
+                <select id="hhPayer" required></select>
+
+                <label>金額 (円)</label>
+                <input type="number" id="hhAmount" required placeholder="例: 5000">
+
+                <label>内容</label>
+                <input type="text" id="hhMemo" required placeholder="例: 食材まとめ買い / 給料">
+
+                <label>この負担を分ける人（支出の場合の割り勘対象）</label>
+                <div class="checkbox-grid" id="hhTargetsGrid"></div>
+
+                <button type="submit" class="btn-primary" style="background-color: #f97316;">記録する</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>📊 収支・精算結果</h3>
+            <div class="result-box" style="background: #fff7ed; border: 1px solid #ffedd5;">
+                <p>総収入: <span id="hhTotalIncome" style="font-weight: bold; color: #22c55e;">0 円</span></p>
+                <p>総支出: <span id="hhTotalExpense" style="font-weight: bold; color: #ef4444;">0 円</span></p>
+                <p>差し引き収支: <span id="hhBalanceTotal" style="font-weight: bold; color: #f97316;">0 円</span></p>
+                <div style="margin-top: 10px; border-top: 1px dashed #fed7aa; padding-top: 8px;">
+                    <b style="font-size: 0.9rem; color: #9a3412;">💡 精算リスト（誰から誰へ）</b>
+                    <div id="hhTransfers" style="margin-top: 6px;"></div>
                 </div>
-
-                <!-- 支払いの追加 -->
-                <div class="bg-white p-5 rounded-xl shadow-sm mb-4">
-                    <h3 class="font-bold text-base border-b pb-2 mb-3">📝 支払いの追加</h3>
-                    <form @submit.prevent="addTravelExpense">
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">日付 (任意)</label>
-                        <input type="date" x-model="travelForm.date" class="w-full px-3 py-2 border rounded-lg text-sm mb-2 outline-none focus:ring-2 focus:ring-indigo-500">
-                        
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">払った人</label>
-                        <select x-model="travelForm.payer" required class="w-full px-3 py-2 border rounded-lg text-sm mb-2 outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
-                            <option value="">メンバーを選択</option>
-                            <template x-for="m in travelMembers" :key="m">
-                                <option :value="m" x-text="m"></option>
-                            </template>
-                        </select>
-
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">金額 (円)</label>
-                        <input type="number" x-model.number="travelForm.amount" required placeholder="例: 6000" class="w-full px-3 py-2 border rounded-lg text-sm mb-2 outline-none focus:ring-2 focus:ring-indigo-500">
-
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">内容</label>
-                        <input type="text" x-model="travelForm.memo" required placeholder="例: 宿代" class="w-full px-3 py-2 border rounded-lg text-sm mb-2 outline-none focus:ring-2 focus:ring-indigo-500">
-
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">この支払いを負担する人</label>
-                        <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-lg border mb-3">
-                            <template x-for="m in travelMembers" :key="m">
-                                <label class="flex items-center text-xs cursor-pointer">
-                                    <input type="checkbox" :value="m" x-model="travelForm.targets" class="w-4 h-4 mr-1.5 text-indigo-600">
-                                    <span x-text="m"></span>
-                                </label>
-                            </template>
-                            <template x-if="travelMembers.length === 0">
-                                <div class="col-span-2 text-slate-400 text-xs italic text-center">メンバーがいません</div>
-                            </template>
-                        </div>
-
-                        <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-lg text-sm hover:bg-indigo-700">記録する</button>
-                    </form>
-                </div>
-
-                <!-- 精算結果 (PDF化対象エリア) -->
-                <div id="travel-receipt-area" class="bg-white p-5 rounded-xl shadow-sm mb-4">
-                    <h3 class="font-bold text-base border-b pb-2 mb-3">📊 精算結果・レシート</h3>
-                    <div @click="travelTriggerPhoto('bannerPhoto2')" class="w-full h-32 rounded-lg overflow-hidden mb-3 cursor-pointer bg-slate-200">
-                        <img :src="travelPhotos.bannerPhoto2" class="w-full h-full object-cover" alt="思い出写真">
-                    </div>
-
-                    <div class="bg-indigo-50 p-3 rounded-lg text-sm mb-3">
-                        <p class="mb-2">総支出: <span class="font-bold text-indigo-600" x-text="travelTotal.toLocaleString() + ' 円'"></span></p>
-                        
-                        <div class="border-t border-indigo-200 pt-2 mt-2">
-                            <b class="text-xs text-slate-700">💡 精算リスト（誰から誰へ）</b>
-                            <div class="mt-1 space-y-1">
-                                <template x-for="(payers, toPerson) in travelTransfers" :key="toPerson">
-                                    <div class="bg-white p-2 rounded border border-emerald-200">
-                                        <b class="text-xs text-emerald-800" x-text="'➡️ ' + toPerson + ' へ支払う人'"></b>
-                                        <template x-for="item in payers" :key="item.from">
-                                            <div class="flex justify-between items-center text-xs mt-1 pt-1 border-t border-dashed">
-                                                <span class="font-bold" x-text="item.from + ' さん'"></span>
-                                                <span class="font-bold text-emerald-600" x-text="item.amount.toLocaleString() + ' 円'"></span>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-                                <template x-if="Object.keys(travelTransfers).length === 0">
-                                    <div class="text-slate-400 text-xs italic text-center py-1">清算する金額はありません</div>
-                                </template>
-                            </div>
-                        </div>
-
-                        <div class="border-t border-indigo-200 pt-2 mt-2">
-                            <b class="text-xs text-slate-700">👤 収支内訳</b>
-                            <div class="mt-1 space-y-1">
-                                <template x-for="(stat, m) in travelIndividualStats" :key="m">
-                                    <div class="flex justify-between items-center text-xs">
-                                        <span x-text="m + ' (支払:' + stat.paid.toLocaleString() + ' / 負担:' + Math.round(stat.share).toLocaleString() + ')'"></span>
-                                        <span class="font-bold" :class="stat.diff > 0 ? 'text-emerald-600' : (stat.diff < 0 ? 'text-red-500' : 'text-slate-500')" x-text="(stat.diff > 0 ? '+' : '') + Math.round(stat.diff).toLocaleString() + '円'"></span>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                    </div>
-
-                    <h4 class="font-bold text-xs mb-2">支払い履歴</h4>
-                    <ul class="max-h-40 overflow-y-auto space-y-1 mb-3">
-                        <template x-for="(e, index) in travelExpenses" :key="index">
-                            <li class="flex justify-between items-center text-xs border-b pb-1">
-                                <div class="flex-1 pr-2">
-                                    <span class="text-slate-400 text-[10px]" x-text="'[' + e.date + '] '"></span>
-                                    <b x-text="e.payer"></b> が <span x-text="e.amount.toLocaleString()"></span>円 (<span x-text="e.memo"></span>)<br>
-                                    <span class="text-sky-600 text-[10px]" x-text="'対象: ' + e.targets.join(', ')"></span>
-                                </div>
-                                <button @click="deleteTravelExpense(index)" class="bg-red-100 text-red-600 text-[10px] px-2 py-1 rounded hover:bg-red-200">削除</button>
-                            </li>
-                        </template>
-                        <template x-if="travelExpenses.length === 0">
-                            <div class="text-slate-400 text-xs italic text-center py-2">まだ記録がありません</div>
-                        </template>
-                    </ul>
-                </div>
-
-                <!-- PDFダウンロード＆操作ボタン -->
-                <div class="bg-white p-5 rounded-xl shadow-sm mb-4">
-                    <button @click="exportTravelPDF()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-lg text-sm hover:bg-emerald-700 mb-2 shadow">📥 成果をPDFファイルとして保存</button>
-                    <button @click="resetTravel()" class="w-full bg-red-100 text-red-600 font-bold py-2 rounded-lg text-sm hover:bg-red-200 mb-2">すべてリセット</button>
-                    <button @click="currentView = 'home'; window.scrollTo(0,0);" class="w-full bg-slate-200 text-slate-700 font-bold py-2 rounded-lg text-sm hover:bg-slate-300">← メニューに戻る</button>
+                <div style="margin-top: 12px; border-top: 1px dashed #fed7aa; padding-top: 8px;">
+                    <b style="font-size: 0.9rem; color: #9a3412;">👤 一人ひとりの収支内訳</b>
+                    <div id="hhIndividual"></div>
                 </div>
             </div>
-        </template>
 
-        <!-- ================= 3. 家計簿アプリ画面 ================= -->
-        <template x-if="currentView === 'household'">
-            <div>
-                <button @click="currentView = 'home'; window.scrollTo(0,0);" class="inline-block mb-3 text-orange-600 font-bold text-sm hover:underline">← メニューに戻る</button>
-                
-                <div class="text-center mb-5">
-                    <h2 class="text-xl font-bold text-orange-600">🏠 家計簿 レシート・収支</h2>
-                </div>
+            <h4 style="margin-bottom: 8px; font-size: 0.95rem;">履歴</h4>
+            <ul id="hhHistoryList"></ul>
 
-                <!-- メンバー管理 -->
-                <div class="bg-white p-5 rounded-xl shadow-sm mb-4">
-                    <h3 class="font-bold text-base border-b pb-2 mb-3">👥 メンバー管理</h3>
-                    <form @submit.prevent="addHouseholdMember">
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">メンバーの名前を追加</label>
-                        <div class="flex gap-2">
-                            <input type="text" x-model="newHouseholdMemberName" placeholder="例: 家族 / 自分" required class="flex-1 px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500">
-                            <button type="submit" class="bg-orange-500 text-white font-bold px-4 py-2 rounded-lg text-sm hover:bg-orange-600">追加</button>
-                        </div>
-                    </form>
-                    <div class="mt-3">
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">登録中のメンバー</label>
-                        <ul class="max-h-36 overflow-y-auto space-y-1">
-                            <template x-for="(m, index) in householdMembers" :key="index">
-                                <li class="flex justify-between items-center text-sm border-b pb-1">
-                                    <span class="font-bold" x-text="m"></span>
-                                    <button @click="deleteHouseholdMember(index)" class="bg-red-100 text-red-600 text-xs px-2 py-1 rounded hover:bg-red-200">削除</button>
-                                </li>
-                            </template>
-                            <template x-if="householdMembers.length === 0">
-                                <div class="text-slate-400 text-xs italic text-center py-2">まだメンバーがいません</div>
-                            </template>
-                        </ul>
-                    </div>
-                </div>
+            <button type="button" class="btn-success" onclick="openReceiptModal('household')">🧾 レシート・PDFを出力</button>
+            <button type="button" class="btn-danger" onclick="resetHhData()">すべてリセット</button>
+            <a class="nav-back" style="display: block; text-align: center; margin-top: 16px;" onclick="switchView('home')">← メニューに戻る</a>
+        </div>
+    </div>
 
-                <!-- 収支の追加 -->
-                <div class="bg-white p-5 rounded-xl shadow-sm mb-4">
-                    <h3 class="font-bold text-base border-b pb-2 mb-3">📝 収支の追加</h3>
-                    <form @submit.prevent="addHouseholdItem">
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">日付 (任意)</label>
-                        <input type="date" x-model="householdForm.date" class="w-full px-3 py-2 border rounded-lg text-sm mb-2 outline-none focus:ring-2 focus:ring-orange-500">
-
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">種類</label>
-                        <select x-model="householdForm.type" class="w-full px-3 py-2 border rounded-lg text-sm mb-2 outline-none focus:ring-2 focus:ring-orange-500 bg-white">
-                            <option value="expense">🔴 支出（支払い）</option>
-                            <option value="income">🟢 収入（受取・給料など）</option>
-                        </select>
-
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">対象者（担当者）</label>
-                        <select x-model="householdForm.payer" required class="w-full px-3 py-2 border rounded-lg text-sm mb-2 outline-none focus:ring-2 focus:ring-orange-500 bg-white">
-                            <option value="">メンバーを選択</option>
-                            <template x-for="m in householdMembers" :key="m">
-                                <option :value="m" x-text="m"></option>
-                            </template>
-                        </select>
-
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">金額 (円)</label>
-                        <input type="number" x-model.number="householdForm.amount" required placeholder="例: 5000" class="w-full px-3 py-2 border rounded-lg text-sm mb-2 outline-none focus:ring-2 focus:ring-orange-500">
-
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">内容</label>
-                        <input type="text" x-model="householdForm.memo" required placeholder="例: 食材まとめ買い / 給料" class="w-full px-3 py-2 border rounded-lg text-sm mb-2 outline-none focus:ring-2 focus:ring-orange-500">
-
-                        <template x-if="householdForm.type === 'expense'">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">この負担を分ける人（割り勘対象）</label>
-                                <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-lg border mb-3">
-                                    <template x-for="m in householdMembers" :key="m">
-                                        <label class="flex items-center text-xs cursor-pointer">
-                                            <input type="checkbox" :value="m" x-model="householdForm.targets" class="w-4 h-4 mr-1.5 text-orange-500">
-                                            <span x-text="m"></span>
-                                        </label>
-                                    </template>
-                                </div>
-                            </div>
-                        </template>
-
-                        <button type="submit" class="w-full bg-orange-500 text-white font-bold py-2.5 rounded-lg text-sm hover:bg-orange-600 mt-2">記録する</button>
-                    </form>
-                </div>
-
-                <!-- 収支・精算結果 (PDF化対象エリア) -->
-                <div id="household-receipt-area" class="bg-white p-5 rounded-xl shadow-sm mb-4">
-                    <h3 class="font-bold text-base border-b pb-2 mb-3">📊 収支・精算結果</h3>
-                    
-                    <div class="bg-orange-50 border border-orange-100 p-3 rounded-lg text-sm mb-3">
-                        <p class="mb-1">総収入: <span class="font-bold text-emerald-600" x-text="householdTotals.income.toLocaleString() + ' 円'"></span></p>
-                        <p class="mb-1">総支出: <span class="font-bold text-red-500" x-text="householdTotals.expense.toLocaleString() + ' 円'"></span></p>
-                        <p class="mb-2">差し引き収支: <span class="font-bold text-orange-600" x-text="householdTotals.balance.toLocaleString() + ' 円'"></span></p>
-
-                        <div class="border-t border-orange-200 pt-2 mt-2">
-                            <b class="text-xs text-orange-900">💡 精算リスト（誰から誰へ）</b>
-                            <div class="mt-1 space-y-1">
-                                <template x-for="(payers, toPerson) in householdTransfers" :key="toPerson">
-                                    <div class="bg-white p-2 rounded border border-emerald-200">
-                                        <b class="text-xs text-emerald-800" x-text="'➡️ ' + toPerson + ' へ渡す人'"></b>
-                                        <template x-for="item in payers" :key="item.from">
-                                            <div class="flex justify-between items-center text-xs mt-1 pt-1 border-t border-dashed">
-                                                <span class="font-bold" x-text="item.from + ' さん'"></span>
-                                                <span class="font-bold text-emerald-600" x-text="item.amount.toLocaleString() + ' 円'"></span>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-                                <template x-if="Object.keys(householdTransfers).length === 0">
-                                    <div class="text-slate-400 text-xs italic text-center py-1">清算する金額はありません</div>
-                                </template>
-                            </div>
-                        </div>
-
-                        <div class="border-t border-orange-200 pt-2 mt-2">
-                            <b class="text-xs text-orange-900">👤 一人ひとりの収支内訳</b>
-                            <div class="mt-1 space-y-1">
-                                <template x-for="(stat, m) in householdIndividualStats" :key="m">
-                                    <div class="flex justify-between items-center text-xs">
-                                        <span x-text="m + ' (収入:' + stat.income.toLocaleString() + ' / 支払:' + stat.paid.toLocaleString() + ' / 負担:' + Math.round(stat.share).toLocaleString() + ')'"></span>
-                                        <span class="font-bold" :class="stat.diff > 0 ? 'text-emerald-600' : (stat.diff < 0 ? 'text-red-500' : 'text-slate-500')" x-text="(stat.diff > 0 ? '+' : '') + Math.round(stat.diff).toLocaleString() + '円'"></span>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                    </div>
-
-                    <h4 class="font-bold text-xs mb-2">履歴</h4>
-                    <ul class="max-h-40 overflow-y-auto space-y-1 mb-3">
-                        <template x-for="(e, index) in householdExpenses" :key="index">
-                            <li class="flex justify-between items-center text-xs border-b pb-1">
-                                <div class="flex-1 pr-2">
-                                    <span class="text-slate-400 text-[10px]" x-text="'[' + e.date + '] '"></span>
-                                    <span class="font-bold text-[10px]" :class="e.type === 'income' ? 'text-emerald-600' : 'text-red-500'" x-text="e.type === 'income' ? '[収入]' : '[支出]'"></span>
-                                    <b x-text="e.payer"></b> が <span x-text="e.amount.toLocaleString()"></span>円 (<span x-text="e.memo"></span>)<br>
-                                    <template x-if="e.type === 'expense'">
-                                        <span class="text-sky-600 text-[10px]" x-text="'対象: ' + e.targets.join(', ')"></span>
-                                    </template>
-                                </div>
-                                <button @click="deleteHouseholdItem(index)" class="bg-red-100 text-red-600 text-[10px] px-2 py-1 rounded hover:bg-red-200">削除</button>
-                            </li>
-                        </template>
-                        <template x-if="householdExpenses.length === 0">
-                            <div class="text-slate-400 text-xs italic text-center py-2">まだ記録がありません</div>
-                        </template>
-                    </ul>
-                </div>
-
-                <!-- PDFダウンロード＆操作ボタン -->
-                <div class="bg-white p-5 rounded-xl shadow-sm mb-4">
-                    <button @click="exportHouseholdPDF()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-lg text-sm hover:bg-emerald-700 mb-2 shadow">📥 成果をPDFファイルとして保存</button>
-                    <button @click="resetHousehold()" class="w-full bg-red-100 text-red-600 font-bold py-2 rounded-lg text-sm hover:bg-red-200 mb-2">すべてリセット</button>
-                    <button @click="currentView = 'home'; window.scrollTo(0,0);" class="w-full bg-slate-200 text-slate-700 font-bold py-2 rounded-lg text-sm hover:bg-slate-300">← メニューに戻る</button>
-                </div>
+    <!-- レシートプレビュー・印刷モーダル -->
+    <div id="printReceiptModal">
+        <div class="receipt-card">
+            <div class="receipt-header">
+                <h3 id="receiptTitle" style="margin:0 0 4px 0; font-size:1.1rem;">【 旅費・割り勘 レシート 】</h3>
+                <span id="receiptDate" style="font-size:0.8rem;"></span>
             </div>
-        </template>
-
+            <div id="receiptBody" style="font-size: 0.85rem; line-height: 1.4;"></div>
+            <div class="receipt-footer">
+                ご利用ありがとうございました！
+            </div>
+            <div class="no-print" style="margin-top: 16px; display: flex; gap: 8px;">
+                <button type="button" class="btn-primary" style="margin-top:0;" onclick="window.print()">印刷 / PDF保存</button>
+                <button type="button" class="btn-danger" style="margin-top:0;" onclick="closeReceiptModal()">閉じる</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        function appData() {
-            return {
-                currentView: 'home',
-                
-                // --- 旅費アプリのデータ ---
-                travelMembers: JSON.parse(localStorage.getItem('travel_members') || '[]'),
-                travelExpenses: JSON.parse(localStorage.getItem('travel_expenses') || '[]'),
-                newTravelMemberName: '',
-                travelForm: {
-                    date: new Date().toISOString().split('T')[0],
-                    payer: '',
-                    amount: '',
-                    memo: '',
-                    targets: []
-                },
-                travelPhotos: JSON.parse(localStorage.getItem('travel_photos') || JSON.stringify({
-                    headerPhoto: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=300',
-                    bannerPhoto1: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=500',
-                    bannerPhoto2: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=500'
-                })),
-                travelActivePhoto: null,
+        function switchView(viewName) {
+            document.querySelectorAll('.app-view').forEach(el => el.classList.remove('active'));
+            document.getElementById('view-' + viewName).classList.add('active');
+            window.scrollTo(0, 0);
+        }
 
-                // --- 家計簿アプリのデータ ---
-                householdMembers: JSON.parse(localStorage.getItem('household_members') || '[]'),
-                householdExpenses: JSON.parse(localStorage.getItem('household_expenses') || '[]'),
-                newHouseholdMemberName: '',
-                householdForm: {
-                    date: new Date().toISOString().split('T')[0],
-                    type: 'expense',
-                    payer: '',
-                    amount: '',
-                    memo: '',
-                    targets: []
-                },
-
-                // --- PDF出力用メソッド ---
-                exportTravelPDF() {
-                    const element = document.getElementById('travel-receipt-area');
-                    const opt = {
-                        margin:       5,
-                        filename:     'travel_receipt.pdf',
-                        image:        { type: 'jpeg', quality: 0.98 },
-                        html2canvas:  { scale: 2, useCORS: true },
-                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                    };
-                    html2pdf().from(element).set(opt).save();
-                },
-
-                exportHouseholdPDF() {
-                    const element = document.getElementById('household-receipt-area');
-                    const opt = {
-                        margin:       5,
-                        filename:     'household_receipt.pdf',
-                        image:        { type: 'jpeg', quality: 0.98 },
-                        html2canvas:  { scale: 2, useCORS: true },
-                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                    };
-                    html2pdf().from(element).set(opt).save();
-                },
-
-                // --- 旅費関連のメソッド ---
-                addTravelMember() {
-                    let name = this.newTravelMemberName.trim();
-                    if (name && !this.travelMembers.includes(name)) {
-                        this.travelMembers.push(name);
-                        this.newTravelMemberName = '';
-                        this.saveTravelStorage();
-                    }
-                },
-                deleteTravelMember(index) {
-                    this.travelMembers.splice(index, 1);
-                    this.saveTravelStorage();
-                },
-                addTravelExpense() {
-                    if (!this.travelForm.payer || !this.travelForm.amount || !this.travelForm.memo || this.travelForm.targets.length === 0) return;
-                    this.travelExpenses.push({
-                        date: this.travelForm.date || new Date().toISOString().split('T')[0],
-                        payer: this.travelForm.payer,
-                        amount: Number(this.travelForm.amount),
-                        memo: this.travelForm.memo,
-                        targets: [...this.travelForm.targets]
-                    });
-                    this.travelForm.amount = '';
-                    this.travelForm.memo = '';
-                    this.saveTravelStorage();
-                },
-                deleteTravelExpense(index) {
-                    this.travelExpenses.splice(index, 1);
-                    this.saveTravelStorage();
-                },
-                resetTravel() {
-                    if (confirm('すべてリセットしますか？')) {
-                        this.travelMembers = [];
-                        this.travelExpenses = [];
-                        this.saveTravelStorage();
-                    }
-                },
-                saveTravelStorage() {
-                    localStorage.setItem('travel_members', JSON.stringify(this.travelMembers));
-                    localStorage.setItem('travel_expenses', JSON.stringify(this.travelExpenses));
-                },
-                travelTriggerPhoto(photoId) {
-                    this.travelActivePhoto = photoId;
-                    document.getElementById('travelPhotoInput').click();
-                },
-                handlePhotoChange(event, photoId) {
-                    const file = event.target.files[0];
-                    if (file && photoId) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            this.travelPhotos[photoId] = e.target.result;
-                            localStorage.setItem('travel_photos', JSON.stringify(this.travelPhotos));
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                },
-
-                get travelTotal() {
-                    return this.travelExpenses.reduce((sum, item) => sum + item.amount, 0);
-                },
-
-                get travelIndividualStats() {
-                    let stats = {};
-                    this.travelMembers.forEach(m => { stats[m] = { paid: 0, share: 0 }; });
-                    this.travelExpenses.forEach(e => {
-                        if (stats[e.payer]) stats[e.payer].paid += e.amount;
-                        if (e.targets && e.targets.length > 0) {
-                            let perShare = e.amount / e.targets.length;
-                            e.targets.forEach(t => {
-                                if (stats[t]) stats[t].share += perShare;
-                            });
-                        }
-                    });
-                    let result = {};
-                    this.travelMembers.forEach(m => {
-                        let diff = stats[m].paid - stats[m].share;
-                        result[m] = { paid: stats[m].paid, share: stats[m].share, diff: diff };
-                    });
-                    return result;
-                },
-                
-                get travelTransfers() {
-                    let directTransfers = {};
-                    this.travelExpenses.forEach(e => {
-                        let payer = e.payer;
-                        let targets = e.targets;
-                        if (!targets || targets.length === 0) return;
-                        let share = e.amount / targets.length;
-                        targets.forEach(t => {
-                            if (t !== payer) {
-                                let key = t + '___' + payer;
-                                directTransfers[key] = (directTransfers[key] || 0) + share;
-                            }
-                        });
-                    });
-
-                    // 相殺処理
-                    let pairs = Object.keys(directTransfers);
-                    for (let i = 0; i < pairs.length; i++) {
-                        let p1 = pairs[i];
-                        let parts = p1.split('___');
-                        let t1 = parts[0], t2 = parts[1];
-                        let p2 = t2 + '___' + t1;
-                        if (directTransfers[p2] !== undefined && p1 < p2) {
-                            let diff = directTransfers[p1] - directTransfers[p2];
-                            if (diff > 0) {
-                                directTransfers[p1] = diff;
-                                delete directTransfers[p2];
-                            } else if (diff < 0) {
-                                directTransfers[p2] = -diff;
-                                delete directTransfers[p1];
-                            } else {
-                                delete directTransfers[p1];
-                                delete directTransfers[p2];
-                            }
-                        }
-                    }
-
-                    let transfersByRecipient = {};
-                    for (let key in directTransfers) {
-                        let parts = key.split('___');
-                        let frm = parts[0], to = parts[1];
-                        let amt = Math.round(directTransfers[key]);
-                        if (amt > 0) {
-                            if (!transfersByRecipient[to]) transfersByRecipient[to] = [];
-                            transfersByRecipient[to].push({ from: frm, amount: amt });
-                        }
-                    }
-                    return transfersByRecipient;
-                },
-                
-                // --- 家計簿関連のメソッド ---
-                addHouseholdMember() {
-                    let name = this.newHouseholdMemberName.trim();
-                    if (name && !this.householdMembers.includes(name)) {
-                        this.householdMembers.push(name);
-                        this.newHouseholdMemberName = '';
-                        this.saveHouseholdStorage();
-                    }
-                },
-                deleteHouseholdMember(index) {
-                    this.householdMembers.splice(index, 1);
-                    this.saveHouseholdStorage();
-                },
-                addHouseholdItem() {
-                    if (!this.householdForm.payer || !this.householdForm.amount || !this.householdForm.memo) return;
-                    if (this.householdForm.type === 'expense' && this.householdForm.targets.length === 0) return;
-
-                    this.householdExpenses.push({
-                        date: this.householdForm.date || new Date().toISOString().split('T')[0],
-                        type: this.householdForm.type,
-                        payer: this.householdForm.payer,
-                        amount: Number(this.householdForm.amount),
-                        memo: this.householdForm.memo,
-                        targets: this.householdForm.type === 'expense' ? [...this.householdForm.targets] : []
-                    });
-                    this.householdForm.amount = '';
-                    this.householdForm.memo = '';
-                    this.saveHouseholdStorage();
-                },
-                deleteHouseholdItem(index) {
-                    this.householdExpenses.splice(index, 1);
-                    this.saveHouseholdStorage();
-                },
-                resetHousehold() {
-                    if (confirm('家計簿のデータをすべてリセットしますか？')) {
-                        this.householdMembers = [];
-                        this.householdExpenses = [];
-                        this.saveHouseholdStorage();
-                    }
-                },
-                saveHouseholdStorage() {
-                    localStorage.setItem('household_members', JSON.stringify(this.householdMembers));
-                    localStorage.setItem('household_expenses', JSON.stringify(this.householdExpenses));
-                },
-
-                get householdTotals() {
-                    let income = 0, expense = 0;
-                    this.householdExpenses.forEach(e => {
-                        if (e.type === 'income') income += e.amount;
-                        else expense += e.amount;
-                    });
-                    return { income: income, expense: expense, balance: income - expense };
-                },
-
-                get householdIndividualStats() {
-                    let stats = {};
-                    this.householdMembers.forEach(m => { stats[m] = { income: 0, paid: 0, share: 0 }; });
-                    this.householdExpenses.forEach(e => {
-                        if (e.type === 'income') {
-                            if (stats[e.payer]) stats[e.payer].income += e.amount;
-                        } else {
-                            if (stats[e.payer]) stats[e.payer].paid += e.amount;
-                            if (e.targets && e.targets.length > 0) {
-                                let perShare = e.amount / e.targets.length;
-                                e.targets.forEach(t => {
-                                    if (stats[t]) stats[t].share += perShare;
-                                });
-                            }
-                        }
-                    });
-                    let result = {};
-                    this.householdMembers.forEach(m => {
-                        let diff = stats[m].income + stats[m].paid - stats[m].share;
-                        result[m] = { income: stats[m].income, paid: stats[m].paid, share: stats[m].share, diff: diff };
-                    });
-                    return result;
-                },
-
-                get householdTransfers() {
-                    let directTransfers = {};
-                    this.householdExpenses.forEach(e => {
-                        if (e.type === 'expense') {
-                            let payer = e.payer;
-                            let targets = e.targets;
-                            if (!targets || targets.length === 0) return;
-                            let share = e.amount / targets.length;
-                            targets.forEach(t => {
-                                let key = t + '___' + payer;
-                                directTransfers[key] = (directTransfers[key] || 0) + share;
-                            });
-                        }
-                    });
-
-                    // 相殺処理
-                    let pairs = Object.keys(directTransfers);
-                    for (let i = 0; i < pairs.length; i++) {
-                        let p1 = pairs[i];
-                        let parts = p1.split('___');
-                        let t1 = parts[0], t2 = parts[1];
-                        let p2 = t2 + '___' + t1;
-                        if (directTransfers[p2] !== undefined && p1 < p2) {
-                            let diff = directTransfers[p1] - directTransfers[p2];
-                            if (diff > 0) {
-                                directTransfers[p1] = diff;
-                                delete directTransfers[p2];
-                            } else if (diff < 0) {
-                                directTransfers[p2] = -diff;
-                                delete directTransfers[p1];
-                            } else {
-                                delete directTransfers[p1];
-                                delete directTransfers[p2];
-                            }
-                        }
-                    }
-
-                    let transfersByRecipient = {};
-                    for (let key in directTransfers) {
-                        let parts = key.split('___');
-                        let frm = parts[0], to = parts[1];
-                        let amt = Math.round(directTransfers[key]);
-                        if (amt > 0) {
-                            if (!transfersByRecipient[to]) transfersByRecipient[to] = [];
-                            transfersByRecipient[to].push({ from: frm, amount: amt });
-                        }
-                    }
-                    return transfersByRecipient;
-                }
+        let activePhotoId = null;
+        function triggerPhotoSelect(photoId) { activePhotoId = photoId; document.getElementById('photoInput').click(); }
+        function handlePhotoChange(event) {
+            const file = event.target.files[0];
+            if (file && activePhotoId) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById(activePhotoId).src = e.target.result;
+                    localStorage.setItem('app_photo_' + activePhotoId, e.target.result);
+                };
+                reader.readAsDataURL(file);
             }
         }
+        window.addEventListener('DOMContentLoaded', () => {
+            ['headerPhoto', 'bannerPhoto1', 'bannerPhoto2'].forEach(id => {
+                const saved = localStorage.getItem('app_photo_' + id);
+                if (saved) document.getElementById(id).src = saved;
+            });
+            loadTravelData();
+            loadHhData();
+        });
+
+        // --- 旅費アプリロジック ---
+        let travelMembers = JSON.parse(localStorage.getItem('travel_members') || '[]');
+        let travelExpenses = JSON.parse(localStorage.getItem('travel_expenses') || '[]');
+
+        function saveTravelData() {
+            localStorage.setItem('travel_members', JSON.stringify(travelMembers));
+            localStorage.setItem('travel_expenses', JSON.stringify(travelExpenses));
+            renderTravel();
+        }
+        function loadTravelData() { renderTravel(); }
+
+        function addTravelMember(e) {
+            e.preventDefault();
+            const name = document.getElementById('travelMemberName').value.trim();
+            if (name && !travelMembers.includes(name)) {
+                travelMembers.push(name);
+                document.getElementById('travelMemberName').value = '';
+                saveTravelData();
+            }
+        }
+
+        function deleteTravelMember(name) {
+            travelMembers = travelMembers.filter(m => m !== name);
+            saveTravelData();
+        }
+
+        function addTravelExpense(e) {
+            e.preventDefault();
+            const payer = document.getElementById('travelPayer').value;
+            const amount = parseFloat(document.getElementById('travelAmount').value);
+            const memo = document.getElementById('travelMemo').value.trim();
+            const date = document.getElementById('travelDate').value || new Date().toISOString().split('T')[0];
+            const checkboxes = document.querySelectorAll('#travelTargetsGrid input[type="checkbox"]:checked');
+            const targets = Array.from(checkboxes).map(cb => cb.value);
+
+            if (payer && memo && amount > 0 && targets.length > 0) {
+                travelExpenses.push({ payer, amount, memo, date, targets });
+                document.getElementById('travelAmount').value = '';
+                document.getElementById('travelMemo').value = '';
+                document.getElementById('travelDate').value = '';
+                saveTravelData();
+            } else {
+                alert('負担する人を1人以上選択してください。');
+            }
+        }
+
+        function deleteTravelExpense(index) {
+            travelExpenses.splice(index, 1);
+            saveTravelData();
+        }
+
+        function resetTravelData() {
+            if (confirm('すべてリセットしますか？')) {
+                travelMembers = [];
+                travelExpenses = [];
+                saveTravelData();
+            }
+        }
+
+        function renderTravel() {
+            document.getElementById('travelMemberList').innerHTML = travelMembers.length ? travelMembers.map(m => `
+                <li><span><b>${m}</b></span><button type="button" class="btn-sm-danger" onclick="deleteTravelMember('${m}')">削除</button></li>
+            `).join('') : "<div class='empty-text'>まだメンバーがいません</div>";
+
+            document.getElementById('travelPayer').innerHTML = travelMembers.length ? travelMembers.map(m => `<option value="${m}">${m}</option>`).join('') : '<option value="">メンバーを追加してください</option>';
+            // 💡 ここで checked を付与して最初から全選択状態にしています
+            document.getElementById('travelTargetsGrid').innerHTML = travelMembers.length ? travelMembers.map(m => `
+                <label><input type="checkbox" value="${m}" checked> ${m}</label>
+            `).join('') : "<div class='empty-text' style='grid-column: span 2;'>メンバーがいません</div>";
+
+            let total = travelExpenses.reduce((sum, item) => sum + item.amount, 0);
+            document.getElementById('travelTotal').textContent = total.toLocaleString() + ' 円';
+
+            let stats = {};
+            travelMembers.forEach(m => stats[m] = { paid: 0, share: 0 });
+            travelExpenses.forEach(e => {
+                if (stats[e.payer]) stats[e.payer].paid += e.amount;
+                if (e.targets && e.targets.length) {
+                    let per = e.amount / e.targets.length;
+                    e.targets.forEach(t => { if (stats[t]) stats[t].share += per; });
+                }
+            });
+
+            let directTransfers = {};
+            travelExpenses.forEach(e => {
+                if (!e.targets || !e.targets.length) return;
+                let per = e.amount / e.targets.length;
+                e.targets.forEach(t => {
+                    if (t !== e.payer) {
+                        let key = t + '___' + e.payer;
+                        directTransfers[key] = (directTransfers[key] || 0) + per;
+                    }
+                });
+            });
+
+            let pairs = Object.keys(directTransfers);
+            pairs.forEach(p1 => {
+                let [t1, t2] = p1.split('___');
+                let p2 = t2 + '___' + t1;
+                if (directTransfers[p2]) {
+                    let diff = directTransfers[p1] - directTransfers[p2];
+                    if (diff > 0) { directTransfers[p1] = diff; delete directTransfers[p2]; }
+                    else if (diff < 0) { directTransfers[p2] = -diff; delete directTransfers[p1]; }
+                    else { delete directTransfers[p1]; delete directTransfers[p2]; }
+                }
+            });
+
+            let transfersByRecipient = {};
+            for (let key in directTransfers) {
+                let [frm, to] = key.split('___');
+                let amt = Math.round(directTransfers[key]);
+                if (amt > 0) {
+                    if (!transfersByRecipient[to]) transfersByRecipient[to] = [];
+                    transfersByRecipient[to].push({ frm, amt });
+                }
+            }
+            
+            let transferHtml = '';
+            for (let to in transfersByRecipient) {
+                transferHtml += `<div class="transfer-group"><b style="color: #166534; font-size: 0.9rem;">➡️ ${to} へ支払う人</b>`;
+                transfersByRecipient[to].forEach(item => {
+                    transferHtml += `<div class="transfer-item"><span><b>${item.frm}</b> さん</span><span style="font-weight: bold; color: #15803d;">${item.amt.toLocaleString()} 円</span></div>`;
+                });
+                transferHtml += `</div>`;
+            }
+            document.getElementById('travelTransfers').innerHTML = transferHtml || "<div class='empty-text'>精算する金額はありません</div>";
+            
+            let individualHtml = '';
+            travelMembers.forEach(m => {
+                let p = stats[m].paid;
+                let s = stats[m].share;
+                let diff = Math.round(p - s);
+                let status = diff > 0 ? `<span style='color: #16a34a; font-weight: bold;'>+${diff.toLocaleString()}円</span>` : (diff < 0 ? `<span style='color: #dc2626; font-weight: bold;'>${diff.toLocaleString()}円</span>` : `<span style='color: #64748b;'>±0円</span>`);
+                individualHtml += `<p style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 0.9rem;"><span><b>${m}</b> (払:${p.toLocaleString()} / 負担:${Math.round(s).toLocaleString()})</span><span>${status}</span></p>`;
+            });
+            document.getElementById('travelIndividual').innerHTML = individualHtml || "<div class='empty-text'>メンバーを追加してください</div>";
+
+            document.getElementById('travelHistoryList').innerHTML = travelExpenses.length ? travelExpenses.map((e, i) => `
+                <li>
+                    <div style="flex-grow: 1; min-width: 0;"><span style="color:#64748b; font-size:0.8rem;">[${e.date}]</span> <b>${e.payer}</b> が ${e.amount.toLocaleString()}円 (${e.memo})<br><span style="color:#0ea5e9; font-size:0.8rem;">対象: ${e.targets.join(', ')}</span></div>
+                    <button type="button" class="btn-sm-danger" onclick="deleteTravelExpense(${i})">削除</button>
+                </li>
+            `).join('') : "<div class='empty-text'>まだ記録がありません</div>";
+        }
+
+
+        // --- 家計簿アプリロジック ---
+        let hhMembers = JSON.parse(localStorage.getItem('hh_members') || '[]');
+        let hhExpenses = JSON.parse(localStorage.getItem('hh_expenses') || '[]');
+
+        function saveHhData() {
+            localStorage.setItem('hh_members', JSON.stringify(hhMembers));
+            localStorage.setItem('hh_expenses', JSON.stringify(hhExpenses));
+            renderHh();
+        }
+        function loadHhData() { renderHh(); }
+
+        function addHhMember(e) {
+            e.preventDefault();
+            const name = document.getElementById('hhMemberName').value.trim();
+            if (name && !hhMembers.includes(name)) {
+                hhMembers.push(name);
+                document.getElementById('hhMemberName').value = '';
+                saveHhData();
+            }
+        }
+
+        function deleteHhMember(name) {
+            hhMembers = hhMembers.filter(m => m !== name);
+            saveHhData();
+        }
+
+        function addHhItem(e) {
+            e.preventDefault();
+            const payer = document.getElementById('hhPayer').value;
+            const itemType = document.getElementById('hhItemType').value;
+            const amount = parseFloat(document.getElementById('hhAmount').value);
+            const memo = document.getElementById('hhMemo').value.trim();
+            const date = document.getElementById('hhDate').value || new Date().toISOString().split('T')[0];
+            const checkboxes = document.querySelectorAll('#hhTargetsGrid input[type="checkbox"]:checked');
+            const targets = Array.from(checkboxes).map(cb => cb.value);
+
+            if (payer && memo && amount > 0) {
+                if (itemType === 'expense' && targets.length === 0) {
+                    alert('負担する人を1人以上選択してください。');
+                    return;
+                }
+                hhExpenses.push({ type: itemType, payer, amount, memo, date, targets: itemType === 'expense' ? targets : [] });
+                document.getElementById('hhAmount').value = '';
+                document.getElementById('hhMemo').value = '';
+                document.getElementById('hhDate').value = '';
+                saveHhData();
+            }
+        }
+
+        function deleteHhItem(index) {
+            hhExpenses.splice(index, 1);
+            saveHhData();
+        }
+
+        function resetHhData() {
+            if (confirm('家計簿のデータをすべてリセットしますか？')) {
+                hhMembers = [];
+                hhExpenses = [];
+                saveHhData();
+            }
+        }
+
+        function renderHh() {
+            document.getElementById('hhMemberList').innerHTML = hhMembers.length ? hhMembers.map(m => `
+                <li><span><b>${m}</b></span><button type="button" class="btn-sm-danger" onclick="deleteHhMember('${m}')">削除</button></li>
+            `).join('') : "<div class='empty-text'>まだメンバーがいません</div>";
+
+            document.getElementById('hhPayer').innerHTML = hhMembers.length ? hhMembers.map(m => `<option value="${m}">${m}</option>`).join('') : '<option value="">メンバーを追加してください</option>';
+            // 💡 ここでも checked を付与して最初から全選択状態にしています
+            document.getElementById('hhTargetsGrid').innerHTML = hhMembers.length ? hhMembers.map(m => `
+                <label><input type="checkbox" value="${m}" checked> ${m}</label>
+            `).join('') : "<div class='empty-text' style='grid-column: span 2;'>メンバーがいません</div>";
+
+            let totalIncome = hhExpenses.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0);
+            let totalExpense = hhExpenses.filter(e => e.type === 'expense').reduce((sum, e) => sum + e.amount, 0);
+            let balanceTotal = totalIncome - totalExpense;
+
+            document.getElementById('hhTotalIncome').textContent = totalIncome.toLocaleString() + ' 円';
+            document.getElementById('hhTotalExpense').textContent = totalExpense.toLocaleString() + ' 円';
+            document.getElementById('hhBalanceTotal').textContent = balanceTotal.toLocaleString() + ' 円';
+
+            let stats = {};
+            hhMembers.forEach(m => stats[m] = { income: 0, paid: 0, share: 0 });
+            hhExpenses.forEach(e => {
+                if (e.type === 'income') {
+                    if (stats[e.payer]) stats[e.payer].income += e.amount;
+                } else {
+                    if (stats[e.payer]) stats[e.payer].paid += e.amount;
+                    if (e.targets && e.targets.length) {
+                        let per = e.amount / e.targets.length;
+                        e.targets.forEach(t => { if (stats[t]) stats[t].share += per; });
+                    }
+                }
+            });
+
+            let directTransfers = {};
+            hhExpenses.forEach(e => {
+                if (e.type === 'expense' && e.targets && e.targets.length) {
+                    let per = e.amount / e.targets.length;
+                    e.targets.forEach(t => {
+                        if (t !== e.payer) {
+                            let key = t + '___' + e.payer;
+                            directTransfers[key] = (directTransfers[key] || 0) + per;
+                        }
+                    });
+                }
+            });
+
+            let pairs = Object.keys(directTransfers);
+            pairs.forEach(p1 => {
+                let [t1, t2] = p1.split('___');
+                let p2 = t2 + '___' + t1;
+                if (directTransfers[p2]) {
+                    let diff = directTransfers[p1] - directTransfers[p2];
+                    if (diff > 0) { directTransfers[p1] = diff; delete directTransfers[p2]; }
+                    else if (diff < 0) { directTransfers[p2] = -diff; delete directTransfers[p1]; }
+                    else { delete directTransfers[p1]; delete directTransfers[p2]; }
+                }
+            });
+
+            let transfersByRecipient = {};
+            for (let key in directTransfers) {
+                let [frm, to] = key.split('___');
+                let amt = Math.round(directTransfers[key]);
+                if (amt > 0) {
+                    if (!transfersByRecipient[to]) transfersByRecipient[to] = [];
+                    transfersByRecipient[to].push({ frm, amt });
+                }
+            }
+
+            let transferHtml = '';
+            for (let to in transfersByRecipient) {
+                transferHtml += `<div class="transfer-group"><b style="color: #166534; font-size: 0.9rem;">➡️ ${to} へ渡す人</b>`;
+                transfersByRecipient[to].forEach(item => {
+                    transferHtml += `<div class="transfer-item"><span><b>${item.frm}</b> さん</span><span style="font-weight: bold; color: #15803d;">${item.amt.toLocaleString()} 円</span></div>`;
+                });
+                transferHtml += `</div>`;
+            }
+            document.getElementById('hhTransfers').innerHTML = transferHtml || "<div class='empty-text'>精算する金額はありません</div>";
+
+            let individualHtml = '';
+            hhMembers.forEach(m => {
+                let inc = stats[m].income;
+                let p = stats[m].paid;
+                let s = stats[m].share;
+                let diff = Math.round(inc + p - s);
+                let status = diff > 0 ? `<span style='color: #16a34a; font-weight: bold;'>+${diff.toLocaleString()}円</span>` : (diff < 0 ? `<span style='color: #dc2626; font-weight: bold;'>${diff.toLocaleString()}円</span>` : `<span style='color: #64748b;'>±0円</span>`);
+                individualHtml += `<p style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 0.9rem;"><span><b>${m}</b> (収:${inc.toLocaleString()} / 払:${p.toLocaleString()} / 負:${Math.round(s).toLocaleString()})</span><span>${status}</span></p>`;
+            });
+            document.getElementById('hhIndividual').innerHTML = individualHtml || "<div class='empty-text'>メンバーを追加してください</div>";
+
+            document.getElementById('hhHistoryList').innerHTML = hhExpenses.length ? hhExpenses.map((e, i) => {
+                let badge = e.type === 'income' ? '<span style="color:#22c55e; font-size:0.8rem; font-weight:bold;">[収入]</span>' : '<span style="color:#ef4444; font-size:0.8rem; font-weight:bold;">[支出]</span>';
+                let desc = e.type === 'income' ? `<b>${e.payer}</b> が ${e.amount.toLocaleString()}円の収入 (${e.memo})` : `<b>${e.payer}</b> が ${e.amount.toLocaleString()}円 (${e.memo})<br><span style="color:#0ea5e9; font-size:0.8rem;">対象: ${e.targets.join(', ')}</span>`;
+                return `
+                    <li>
+                        <div style="flex-grow: 1; min-width: 0;"><span style="color:#64748b; font-size:0.8rem;">[${e.date}]</span> ${badge} ${desc}</div>
+                        <button type="button" class="btn-sm-danger" onclick="deleteHhItem(${i})">削除</button>
+                    </li>
+                `;
+            }).join('') : "<div class='empty-text'>まだ記録がありません</div>";
+        }
+
+        // --- レシートプレビュー・PDF出力処理 ---
+        function openReceiptModal(appType) {
+            const modal = document.getElementById('printReceiptModal');
+            const titleEl = document.getElementById('receiptTitle');
+            const dateEl = document.getElementById('receiptDate');
+            const bodyEl = document.getElementById('receiptBody');
+            
+            const nowStr = new Date().toLocaleString('ja-JP');
+            dateEl.textContent = `発行日時: ${nowStr}`;
+
+            let htmlContent = '';
+
+            if (appType === 'travel') {
+                titleEl.textContent = '【 旅費・割り勘 レシート 】';
+                let total = travelExpenses.reduce((sum, item) => sum + item.amount, 0);
+
+                htmlContent += `<div style="margin-bottom:8px; border-bottom:1px dashed #000; padding-bottom:8px;"><b>■ 明細一覧</b></div>`;
+                if (travelExpenses.length > 0) {
+                    travelExpenses.forEach((e, idx) => {
+                        htmlContent += `<div>${idx+1}. [${e.date}] ${e.memo}</div>`;
+                        htmlContent += `<div style="padding-left:10px;">¥${e.amount.toLocaleString()} (払:${e.payer})</div>`;
+                        htmlContent += `<div style="padding-left:10px; font-size:0.8rem; color:#444;">負担: ${e.targets.join(', ')}</div><div style="margin:4px 0;"></div>`;
+                    });
+                } else {
+                    htmlContent += `<div>記録はありません。</div>`;
+                }
+
+                htmlContent += `<div style="margin:12px 0; border-top:1px dashed #000; padding-top:8px;"><b>総支出合計: ¥${total.toLocaleString()}</b></div>`;
+                htmlContent += `<div style="margin-bottom:8px; border-bottom:1px dashed #000; padding-bottom:8px;"><b>■ 精算結果 (お支払い)</b></div>`;
+
+                let directTransfers = {};
+                travelExpenses.forEach(e => {
+                    if (!e.targets || !e.targets.length) return;
+                    let per = e.amount / e.targets.length;
+                    e.targets.forEach(t => {
+                        if (t !== e.payer) {
+                            let key = t + '___' + e.payer;
+                            directTransfers[key] = (directTransfers[key] || 0) + per;
+                        }
+                    });
+                });
+                let pairs = Object.keys(directTransfers);
+                pairs.forEach(p1 => {
+                    let [t1, t2] = p1.split('___');
+                    let p2 = t2 + '___' + t1;
+                    if (directTransfers[p2]) {
+                        let diff = directTransfers[p1] - directTransfers[p2];
+                        if (diff > 0) { directTransfers[p1] = diff; delete directTransfers[p2]; }
+                        else if (diff < 0) { directTransfers[p2] = -diff; delete directTransfers[p1]; }
+                        else { delete directTransfers[p1]; delete directTransfers[p2]; }
+                    }
+                });
+                let hasTransfers = false;
+                for (let key in directTransfers) {
+                    let [frm, to] = key.split('___');
+                    let amt = Math.round(directTransfers[key]);
+                    if (amt > 0) {
+                        hasTransfers = true;
+                        htmlContent += `<div>▶ ${frm} → ${to} : ¥${amt.toLocaleString()}</div>`;
+                    }
+                }
+                if (!hasTransfers) {
+                    htmlContent += `<div>精算する金額はありません。</div>`;
+                }
+            
+            } else {
+                titleEl.textContent = '【 家計簿・収支 レシート 】';
+                let totalIncome = hhExpenses.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0);
+                let totalExpense = hhExpenses.filter(e => e.type === 'expense').reduce((sum, e) => sum + e.amount, 0);
+                let balanceTotal = totalIncome - totalExpense;
+
+                htmlContent += `<div style="margin-bottom:8px; border-bottom:1px dashed #000; padding-bottom:8px;"><b>■ 収支履歴一覧</b></div>`;
+                if (hhExpenses.length > 0) {
+                    hhExpenses.forEach((e, idx) => {
+                        let t_type = e.type === 'income' ? '収入' : '支出';
+                        htmlContent += `<div>${idx+1}. [${e.date}] [${t_type}] ${e.memo}</div>`;
+                        htmlContent += `<div style="padding-left:10px;">¥${e.amount.toLocaleString()} (担当:${e.payer})</div>`;
+                        if(e.type === 'expense') {
+                            htmlContent += `<div style="padding-left:10px; font-size:0.8rem; color:#444;">負担: ${e.targets.join(', ')}</div>`;
+                        }
+                        htmlContent += `<div style="margin:4px 0;"></div>`;
+                    });
+                } else {
+                    htmlContent += `<div>記録はありません。</div>`;
+                }
+
+                htmlContent += `<div style="margin:12px 0; border-top:1px dashed #000; padding-top:8px;">`;
+                htmlContent += `<div>総収入合計: ¥${totalIncome.toLocaleString()}</div>`;
+                htmlContent += `<div>総支出合計: ¥${totalExpense.toLocaleString()}</div>`;
+                htmlContent += `<div><b>差し引き収支: ¥${balanceTotal.toLocaleString()}</b></div>`;
+                htmlContent += `</div>`;
+            }
+
+            bodyEl.innerHTML = htmlContent;
+            modal.style.display = 'flex';
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('printReceiptModal').style.display = 'none';
+        }
     </script>
-</body>
+</body>x
 </html>
