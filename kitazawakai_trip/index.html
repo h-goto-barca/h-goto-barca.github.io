@@ -372,7 +372,7 @@
             </div>
             <div id="receipt-body" class="text-xs space-y-2"></div>
             <div class="text-center border-t-2 border-dashed border-slate-400 pt-3 text-[10px] text-slate-600">
-                お疲れ様でした！
+                ご利用ありがとうございました。！
             </div>
             <div class="flex space-x-2 pt-2 print:hidden">
                 <button onclick="window.print()" class="flex-1 bg-blue-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-blue-500 transition">印刷 / PDF保存</button>
@@ -396,11 +396,11 @@
             tripDays: parseInt(localStorage.getItem('bros_trip_days')) || 3,
             currentDay: 1,
             generalPenalties: JSON.parse(localStorage.getItem('bros_general_penalties')) || [
-                "居酒屋「海鮮大将」に行く",
-                "ラーメン「麺屋 〇〇」に行く",
+                "居酒屋「魯山」に行く",
+                "ラーメン「大黒屋」に行く",
                 "次のサービスエリアでソフトクリーム奢り",
                 "スマホのカメラロールの一番古い写真を見せる",
-                "次の移動の運転担当を決める（別の意味でも）"
+                "次の移動の運転担当を決める"
             ]
         };
 
@@ -764,14 +764,14 @@
 
                 let paysHtml = data.pays.map(p => `
                     <div class="flex justify-between items-center text-sm py-1.5">
-                        <span class="text-red-400 font-bold">→ <strong class="text-slate-200 font-normal">${p.name}さん</strong> へ支払う</span>
+                        <span class="text-red-400 font-bold">← <strong class="text-slate-200 font-normal">${p.name}さん</strong> へ支払う</span>
                         <span class="font-extrabold text-red-400 text-base">¥${p.amount.toLocaleString()}</span>
                     </div>
                 `).join('');
 
                 let receivesHtml = data.receives.map(r => `
                     <div class="flex justify-between items-center text-sm py-1.5">
-                        <span class="text-emerald-400 font-bold">← <strong class="text-slate-200 font-normal">${r.name}さん</strong> から受け取る</span>
+                        <span class="text-emerald-400 font-bold">→ <strong class="text-slate-200 font-normal">${r.name}さん</strong> から受け取る</span>
                         <span class="font-extrabold text-emerald-400 text-base">¥${r.amount.toLocaleString()}</span>
                     </div>
                 `).join('');
